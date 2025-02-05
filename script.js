@@ -12,6 +12,25 @@
   //const app = firebase.initializeApp(firebaseConfig);
   //const db = firebase.firestore(); 
   
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCctIitTMSq_Ku7RyMsem4x1Kzl_usg8W4",
+    authDomain: "prueba-crud-25ed8.firebaseapp.com",
+    projectId: "prueba-crud-25ed8",
+    storageBucket: "prueba-crud-25ed8.firebasestorage.app",
+    messagingSenderId: "682332718383",
+    appId: "1:682332718383:web:7546aab7fdadf40d4a8dda"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  
   // Referencias al DOM
   const formulario = document.getElementById('formulario');
   const mensaje = document.getElementById('mensaje');
