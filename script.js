@@ -14,6 +14,8 @@
 
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+  import { getDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -29,7 +31,17 @@
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
-  const db = firebase.firestore(app);
+  const db = getFirestore(app);
+  // Añade este código temporalmente para debug
+async function verificarConexion() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'datosPersonales'));
+    console.log('Documentos encontrados:', querySnapshot.size);
+  } catch (error) {
+    console.error('Error de conexión:', error);
+  }
+}
+verificarConexion();
   
   // Referencias al DOM
   const formulario = document.getElementById('formulario');
@@ -42,8 +54,8 @@
   async function cargarRegistros() {
     tablaRegistros.innerHTML = ''; // Limpiar la tabla
     try {
-      const snapshot = await db.collection('datosPersonales').orderBy('fechaRegistro', 'desc').get();
-      snapshot.forEach(doc => {
+      const querySnapshot = await getDocs(collection(db, 'datosPersonales'));
+      querySnapshot.forEach((doc) => {
         const data = doc.data();
         const fila = document.createElement('tr');
   
@@ -79,35 +91,24 @@
   formulario.addEventListener('submit', async (e) => {
     e.preventDefault();
   
-    const id = document.getElementById('idRegistro').value;
-    const nombre = document.getElementById('nombre').value;
-    const email = document.getElementById('email').value;
-    const telefono = document.getElementById('telefono').value;
-    const direccion = document.getElementById('direccion').value;
-    const edad = document.getElementById('edad').value;
+    const datosPersona = {
+      nombre: document.getElementById('nombre').value,
+      email: document.getElementById('email').value,
+      telefono: document.getElementById('telefono').value,
+      direccion: document.getElementById('direccion').value,
+      edad: document.getElementById('edad').value,
+      fechaRegistro: serverTimestamp()
+    };
   
     try {
       if (registroEditando) {
-        // Actualizar el registro existente
-        await db.collection('datosPersonales').doc(id).update({
-          nombre,
-          email,
-          telefono,
-          direccion,
-          edad,
-          fechaRegistro: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        // Actualizar registro existente
+        const docRef = doc(db, 'datosPersonales', document.getElementById('idRegistro').value);
+        await updateDoc(docRef, datosPersona);
         mensaje.textContent = 'Registro actualizado correctamente.';
       } else {
-        // Crear un nuevo registro
-        await db.collection('datosPersonales').add({
-          nombre,
-          email,
-          telefono,
-          direccion,
-          edad,
-          fechaRegistro: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        // Crear nuevo registro
+        await addDoc(collection(db, 'datosPersonales'), datosPersona);
         mensaje.textContent = 'Registro guardado correctamente.';
       }
   
@@ -117,30 +118,41 @@
       registroEditando = null;
   
       // Recargar los registros
-      cargarRegistros();
-    } catch (error) {
-      console.error('Error al guardar/actualizar el registro:', error);
-      mensaje.textContent = 'Ocurrió un error al guardar/actualizar el registro.';
-    }
+      await cargarRegistros();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    mensaje.textContent = 'Error al guardar el registro';
+  }
   });
   
   // Función para cargar un registro en el formulario para editar
   async function cargarRegistroParaEditar(id) {
     try {
-      const doc = await db.collection('datosPersonales').doc(id).get();
-      const data = doc.data();
+      // Obtener referencia al documento
+      const docRef = doc(db, 'datosPersonales', id);
+      // Obtener el documento
+      const docSnap = await getDoc(docRef);
   
-      document.getElementById('idRegistro').value = id;
-      document.getElementById('nombre').value = data.nombre;
-      document.getElementById('email').value = data.email;
-      document.getElementById('telefono').value = data.telefono;
-      document.getElementById('direccion').value = data.direccion;
-      document.getElementById('edad').value = data.edad;
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        // Cargar datos en el formulario
+        document.getElementById('idRegistro').value = id;
+        document.getElementById('nombre').value = data.nombre;
+        document.getElementById('email').value = data.email;
+        document.getElementById('telefono').value = data.telefono;
+        document.getElementById('direccion').value = data.direccion;
+        document.getElementById('edad').value = data.edad;
   
-      registroEditando = true; // Indicar que estamos editando
+        registroEditando = true;
+        mensaje.textContent = 'Registro cargado para editar';
+      } else {
+        mensaje.textContent = 'No se encontró el registro';
+      }
     } catch (error) {
-      console.error('Error al cargar el registro para editar:', error);
-      mensaje.textContent = 'Ocurrió un error al cargar el registro para editar.';
+      console.error('Error:', error);
+      mensaje.textContent = 'Error al cargar el registro';
     }
   }
   
@@ -149,12 +161,16 @@
     if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
   
     try {
-      await db.collection('datosPersonales').doc(id).delete();
+      // Crear referencia al documento
+      const docRef = doc(db, 'datosPersonales', id);
+      // Eliminar el documento
+      await deleteDoc(docRef);
       mensaje.textContent = 'Registro eliminado correctamente.';
-      cargarRegistros(); // Recargar los registros
+      // Recargar la tabla
+      await cargarRegistros();
     } catch (error) {
-      console.error('Error al eliminar el registro:', error);
-      mensaje.textContent = 'Ocurrió un error al eliminar el registro.';
+      console.error('Error al eliminar:', error);
+      mensaje.textContent = 'Error al eliminar el registro';
     }
   }
   
