@@ -14,8 +14,9 @@
 
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
   import { getDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+  
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -50,12 +51,19 @@ verificarConexion();
   
   let registroEditando = null; // Variable para almacenar el ID del registro que se está editando
   
+  // Reemplazar función cargarRegistros
+  let unsubscribe; // Variable para almacenar función de limpieza
   // Función para cargar los registros desde Firestore
-  async function cargarRegistros() {
-    tablaRegistros.innerHTML = ''; // Limpiar la tabla
-    try {
-      const querySnapshot = await getDocs(collection(db, 'datosPersonales'));
-      querySnapshot.forEach((doc) => {
+  function iniciarEscuchaCambios() {
+    // Limpiar listener anterior si existe
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  
+    unsubscribe = onSnapshot(collection(db, 'datosPersonales'), (snapshot) => {
+      tablaRegistros.innerHTML = ''; // Limpiar tabla
+      
+      snapshot.forEach((doc) => {
         const data = doc.data();
         const fila = document.createElement('tr');
   
@@ -73,7 +81,7 @@ verificarConexion();
         tablaRegistros.appendChild(fila);
       });
   
-      // Agregar eventos a los botones de editar y eliminar
+      // Agregar eventos a los botones
       document.querySelectorAll('.editar').forEach(btn => {
         btn.addEventListener('click', () => cargarRegistroParaEditar(btn.dataset.id));
       });
@@ -81,12 +89,21 @@ verificarConexion();
       document.querySelectorAll('.eliminar').forEach(btn => {
         btn.addEventListener('click', () => eliminarRegistro(btn.dataset.id));
       });
-    } catch (error) {
-      console.error('Error al cargar los registros:', error);
-      mensaje.textContent = 'Ocurrió un error al cargar los registros.';
-    }
+    }, (error) => {
+      console.error('Error al escuchar cambios:', error);
+      mensaje.textContent = 'Error al actualizar datos en tiempo real';
+    });
   }
   
+// Iniciar escucha de cambios al cargar la página
+iniciarEscuchaCambios();
+// Limpiar listener cuando se cierra la página
+window.addEventListener('unload', () => {
+  if (unsubscribe) {
+    unsubscribe();
+  }
+});
+
   // Función para guardar o actualizar un registro
   formulario.addEventListener('submit', async (e) => {
     e.preventDefault();
