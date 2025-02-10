@@ -1,0 +1,9 @@
+En esta web pruebo la conexión y almacenaje de datos en la base de datos de Firebase. 
+Almaceno datos personales con un entorno visual muy rudimentario, ya que es solo para pruebas.
+--Pendientes--
+Probar autenticación con firebase
+Probar manejo de usuario registrado
+Probar almacenaje de imagenes con storage
+Probar modo editor si tiene permisos
+probar exportar a .pdf
+Pobar exportar a Excel

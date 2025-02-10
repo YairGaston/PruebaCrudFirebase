@@ -135,7 +135,7 @@ window.addEventListener('unload', () => {
       registroEditando = null;
   
       // Recargar los registros
-      await cargarRegistros();
+      //await cargarRegistros();
     
   } catch (error) {
     console.error('Error:', error);
